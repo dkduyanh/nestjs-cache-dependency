@@ -9,7 +9,7 @@ export class CacheDependencyModule {
   static register(): DynamicModule {
     return {
       module: CacheDependencyModule,
-      global: true
+      global: true,
     };
   }
 }
