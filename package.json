@@ -1,6 +1,6 @@
 {
   "name": "nestjs-cache-dependency",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Cache Dependency for Nestjs",
   "main": "dist/index.js",
   "scripts": {
@@ -28,6 +28,6 @@
   },
   "peerDependencies": {
     "@nestjs/common": "^8.0.0 || ^9.0.0",
-    "cache-manager": "^5.0.0"
+    "cache-manager": "^4.0.0"
   }
 }
