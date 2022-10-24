@@ -11,12 +11,17 @@ export class CacheDependencyService {
 
   /**
    * Set cache with dependency keys
-   * @param key
-   * @param value
-   * @param ttl
+   * @param key string cache key
+   * @param value cache value
+   * @param ttl Time to live - amount of time in seconds that a response is cached before it is deleted
    * @param dependencyKeys
    */
-  async set(key: string, value, ttl: number, dependencyKeys: string[]) {
+  async set<T>(
+    key: string,
+    value: T,
+    ttl: number,
+    dependencyKeys: string[],
+  ): Promise<void> {
     const cacheKey = this._buildDataCacheKey(key);
 
     //validate dependencies
@@ -44,9 +49,9 @@ export class CacheDependencyService {
 
   /**
    * Get cached data
-   * @param key
+   * @param key string cache key
    */
-  public async get(key): Promise<any> {
+  public async get<T>(key: string): Promise<T | undefined> {
     const cacheKey = this._buildDataCacheKey(key);
     const cachedData = await this.cacheManager.get<string>(cacheKey);
 
@@ -57,15 +62,15 @@ export class CacheDependencyService {
         return data[0];
       }
     }
-    return null;
+    return undefined;
   }
 
   /**
-   * Invalidates all of the cached data items that are associated with any of the specified dependencies.
-   * @param {(string|array)} dependencyKeys
-   * @return {boolean} TRUE on success, FALSE otherwise.
+   * Invalidates all the cached data items that are associated with any of the specified dependencies.
+   * @param dependencyKeys Array of dependency keys
+   * @return TRUE on success, FALSE otherwise.
    */
-  public async invalidate(dependencyKeys: string | Array<string>) {
+  public async invalidate(dependencyKeys: string | Array<string>) : Promise<boolean> {
     if (dependencyKeys) {
       if (!Array.isArray(dependencyKeys)) {
         dependencyKeys = [dependencyKeys];
@@ -74,7 +79,8 @@ export class CacheDependencyService {
         return this._buildDependencyCacheKey(e);
       });
       //touch to change dependency versions
-      return await this._updateDependencyVersions(dependencyKeys);
+      await this._updateDependencyVersions(dependencyKeys);
+      return true;
     }
     return false;
   }
@@ -84,16 +90,16 @@ export class CacheDependencyService {
    * This function will try to pull the dependency's versions from cache first.
    * Then force to generate version of unavailable dependencies by calling {this._updateDependencyVersions}
    *
-   * @param {object} client Redis cache client connection
-   * @param {array} dependencies List of specified dependencies
-   * @return {array} the versions (timestamps) of the specified dependencies
+   * @param dependencyKeys Array of dependency keys
+   * @return Array of Dependency objects
+   * @protected
    */
   protected async _generateDependencyVersions(
-    dependencies,
-  ): Promise<Array<any>> {
+    dependencyKeys: Array<string>,
+  ): Promise<Dependency[]> {
     //Find all current dependencies
     let currentDependencies: Dependency[] = await this._getDependencyVersions(
-      dependencies,
+      dependencyKeys,
     );
 
     //Find all unavailable dependencies, which don't have version (timestamp)
@@ -110,7 +116,7 @@ export class CacheDependencyService {
         await this._updateDependencyVersions(newDependencyKeys);
 
       //Merge new dependencies into the current ones
-      currentDependencies = await this._mergeDependencyVersions(
+      currentDependencies = this._mergeDependencyVersions(
         currentDependencies,
         newDependencies,
       );
@@ -119,13 +125,14 @@ export class CacheDependencyService {
   }
 
   /**
-   * Returns the versions (timestamps) for the specified dependency dependencies
-   * @param dependencyKeys List of dependency keys
-   * @return {array} the versions (timestamps) of the specified dependencies
+   * List of dependency keys
+   * @param dependencyKeys Array of dependency keys
+   * @return Array of Dependency objects
+   * @protected
    */
   protected async _getDependencyVersions(
     dependencyKeys: Array<string>,
-  ): Promise<Array<any>> {
+  ): Promise<Dependency[]> {
     const itemObjects: Dependency[] = [];
     if (Array.isArray(dependencyKeys) && dependencyKeys.length > 0) {
       for (const e of dependencyKeys) {
@@ -141,10 +148,13 @@ export class CacheDependencyService {
   /**
    * Touch the dependencies to mark them have been changed.
    * This function will force to update new version (timestamp) for all specified dependencies
-   * @param dependencyKeys List of dependency keys
-   * @returns {array} the version (timestamp) of the specified dependencies
+   * @param dependencyKeys Array of dependency keys
+   * @return Array of Dependency objects
+   * @protected
    */
-  protected async _updateDependencyVersions(dependencyKeys: string[]) {
+  protected async _updateDependencyVersions(
+    dependencyKeys: Array<string>,
+  ): Promise<Dependency[]> {
     const itemObjects = [];
     const version = String(Date.now());
 
@@ -159,11 +169,14 @@ export class CacheDependencyService {
 
   /**
    * Merge new list of dependency versions to the current.
-   * @param {array} arr1 array of current dependency versions
-   * @param {array} arr2 new list of dependency versions need to be merged
-   * @return {array} the list of versions (timestamps) of the specified dependencies
+   * @param arr1 array of current dependency versions
+   * @param arr2 new list of dependency versions need to be merged
+   * @return the list of versions (timestamps) of the specified dependencies
    */
-  protected _mergeDependencyVersions = function (arr1, arr2) {
+  protected _mergeDependencyVersions = function (
+    arr1: Dependency[],
+    arr2: Dependency[],
+  ) : Dependency[] {
     if (Array.isArray(arr2) && arr2.length > 0) {
       //arr2.filter(e2 => arr1.findIndex(e1 => e1.key == e2.key))
 
@@ -187,12 +200,14 @@ export class CacheDependencyService {
    * @param {mixed} cachedData The data pulled from the cache
    * @returns {bool} Returns TRUE if the dependency is valid (not changed), FALSE otherwise
    */
-  protected async _validateDependencyVersions(cachedData): Promise<boolean> {
+  protected async _validateDependencyVersions(
+    cachedData: unknown,
+  ): Promise<boolean> {
     let isValid = false;
     if (
       cachedData !== null &&
       Array.isArray(cachedData) &&
-      cachedData.length == 2
+      cachedData.length === 2
     ) {
       //cachedData is valid because there is no dependency
       if (
@@ -204,7 +219,6 @@ export class CacheDependencyService {
       //verify dependency by checking if dependency versions have been changed?
       else {
         const dependencyKeys = cachedData[1].map(e => e.key);
-
         const dependencies: Dependency[] = await this._getDependencyVersions(
           dependencyKeys,
         );
@@ -223,26 +237,26 @@ export class CacheDependencyService {
    * @param {string} prefix the string that append at begining of key
    * @return {string} the generated cache key
    */
-  protected _buildCacheKey = function (key: string, prefix: string): string {
+  protected _buildCacheKey(key: string, prefix: string): string {
     //TODO: KEY SHOULD BE HASHED BY MD5
-    return String(prefix) + String(key);
-  };
+    return prefix + key;
+  }
 
   /**
    * Builds a normalized Key for DATA
    * @param key
    */
-  protected _buildDataCacheKey = function (key) {
+  protected _buildDataCacheKey(key: string): string {
     return this._buildCacheKey(key, 'D_');
-  };
+  }
 
   /**
    * Builds a normalized Key for Dependency
    * @param key
    */
-  protected _buildDependencyCacheKey = function (key) {
+  protected _buildDependencyCacheKey(key: string): string {
     return this._buildCacheKey(key, 'T_');
-  };
+  }
 }
 
 export type Dependency = {
