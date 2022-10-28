@@ -66,6 +66,15 @@ export class CacheDependencyService {
   }
 
   /**
+   * Delete cached data without invalidate dependencies
+   * @param key string cache key
+   */
+  public async delete(key: string): Promise<any> {
+    const cacheKey = this._buildDataCacheKey(key);
+    return await this.cacheManager.del(cacheKey);
+  }
+
+  /**
    * Invalidates all the cached data items that are associated with any of the specified dependencies.
    * @param dependencyKeys Array of dependency keys
    * @return TRUE on success, FALSE otherwise.
