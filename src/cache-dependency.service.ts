@@ -1,12 +1,12 @@
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
-import { MultiCache } from 'cache-manager';
+import { MultiCache, Cache } from 'cache-manager';
 import * as isEqual from 'lodash.isequal';
 
 @Injectable()
 export class CacheDependencyService {
   constructor(
     @Inject(CACHE_MANAGER)
-    private cacheManager: MultiCache,
+    private cacheManager: Cache,
   ) {}
 
   /**
@@ -21,7 +21,7 @@ export class CacheDependencyService {
     value: T,
     ttl: number,
     dependencyKeys: string[],
-  ): Promise<void> {
+  ): Promise<any> {
     const cacheKey = this._buildDataCacheKey(key);
 
     //validate dependencies
@@ -43,7 +43,9 @@ export class CacheDependencyService {
     return await this.cacheManager.set(
       cacheKey,
       JSON.stringify([value, dependencies]),
-      ttl,
+      {
+        ttl: ttl,
+      },
     );
   }
 
@@ -79,7 +81,9 @@ export class CacheDependencyService {
    * @param dependencyKeys Array of dependency keys
    * @return TRUE on success, FALSE otherwise.
    */
-  public async invalidate(dependencyKeys: string | Array<string>) : Promise<boolean> {
+  public async invalidate(
+    dependencyKeys: string | Array<string>,
+  ): Promise<boolean> {
     if (dependencyKeys) {
       if (!Array.isArray(dependencyKeys)) {
         dependencyKeys = [dependencyKeys];
@@ -169,7 +173,7 @@ export class CacheDependencyService {
 
     if (Array.isArray(dependencyKeys) && dependencyKeys.length > 0) {
       for (let i = 0; i < dependencyKeys.length; i++) {
-        await this.cacheManager.set(dependencyKeys[i], version);
+        await this.cacheManager.set(dependencyKeys[i], version, { ttl: 0 });
         itemObjects.push({ key: dependencyKeys[i], version: version });
       }
     }
@@ -185,7 +189,7 @@ export class CacheDependencyService {
   protected _mergeDependencyVersions = function (
     arr1: Dependency[],
     arr2: Dependency[],
-  ) : Dependency[] {
+  ): Dependency[] {
     if (Array.isArray(arr2) && arr2.length > 0) {
       //arr2.filter(e2 => arr1.findIndex(e1 => e1.key == e2.key))
 
