@@ -10,17 +10,17 @@ export class CacheDependencyService {
   ) {}
 
   /**
-   * Set cache with dependency keys
-   * @param key string cache key
-   * @param value cache value
-   * @param ttl Time to live - amount of time in seconds that a response is cached before it is deleted
+   *
+   * @param key
+   * @param value
+   * @param ttl
    * @param dependencyKeys
    */
   async set<T>(
     key: string,
     value: T,
-    ttl: number,
-    dependencyKeys: string[],
+    ttl?: number,
+    dependencyKeys?: string | string[],
   ): Promise<any> {
     const cacheKey = this._buildDataCacheKey(key);
 
@@ -43,9 +43,7 @@ export class CacheDependencyService {
     return await this.cacheManager.set(
       cacheKey,
       JSON.stringify([value, dependencies]),
-      {
-        ttl: ttl,
-      },
+      ttl,
     );
   }
 
@@ -173,7 +171,7 @@ export class CacheDependencyService {
 
     if (Array.isArray(dependencyKeys) && dependencyKeys.length > 0) {
       for (let i = 0; i < dependencyKeys.length; i++) {
-        await this.cacheManager.set(dependencyKeys[i], version, { ttl: 0 });
+        await this.cacheManager.set(dependencyKeys[i], version, 0);
         itemObjects.push({ key: dependencyKeys[i], version: version });
       }
     }
