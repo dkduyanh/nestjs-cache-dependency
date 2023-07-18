@@ -1,12 +1,14 @@
-import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
-import { MultiCache, Cache } from 'cache-manager';
+import { Inject, Injectable } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { MultiCache } from 'cache-manager';
 import * as isEqual from 'lodash.isequal';
+import { isNil } from "@nestjs/common/utils/shared.utils";
 
 @Injectable()
 export class CacheDependencyService {
   constructor(
     @Inject(CACHE_MANAGER)
-    private cacheManager: Cache,
+    private cacheManager: MultiCache,
   ) {}
 
   /**
@@ -43,9 +45,7 @@ export class CacheDependencyService {
     return await this.cacheManager.set(
       cacheKey,
       JSON.stringify([value, dependencies]),
-      {
-        ttl: ttl,
-      },
+      !isNil(ttl) ? ttl: undefined,
     );
   }
 
@@ -173,7 +173,7 @@ export class CacheDependencyService {
 
     if (Array.isArray(dependencyKeys) && dependencyKeys.length > 0) {
       for (let i = 0; i < dependencyKeys.length; i++) {
-        await this.cacheManager.set(dependencyKeys[i], version, { ttl: 0 });
+        await this.cacheManager.set(dependencyKeys[i], version, 0);
         itemObjects.push({ key: dependencyKeys[i], version: version });
       }
     }
