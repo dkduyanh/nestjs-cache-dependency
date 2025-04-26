@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { MultiCache } from 'cache-manager';
+import { Cache } from 'cache-manager';
 import * as isEqual from 'lodash.isequal';
 import { isNil } from "@nestjs/common/utils/shared.utils";
 
@@ -8,7 +8,7 @@ import { isNil } from "@nestjs/common/utils/shared.utils";
 export class CacheDependencyService {
   constructor(
     @Inject(CACHE_MANAGER)
-    private cacheManager: MultiCache,
+    private cacheManager: Cache,
   ) {}
 
   /**
@@ -21,13 +21,13 @@ export class CacheDependencyService {
   async set<T>(
     key: string,
     value: T,
-    ttl: number,
+    ttl: number | null,
     dependencyKeys: string[],
-  ): Promise<any> {
+  ): Promise<string> {
     const cacheKey = this._buildDataCacheKey(key);
 
     //validate dependencies
-    if (dependencyKeys === null || dependencyKeys === undefined) {
+    if (isNil(dependencyKeys)) {
       dependencyKeys = [];
     } else if (!Array.isArray(dependencyKeys)) {
       dependencyKeys = [dependencyKeys];
@@ -53,25 +53,25 @@ export class CacheDependencyService {
    * Get cached data
    * @param key string cache key
    */
-  public async get<T>(key: string): Promise<T | undefined> {
+  public async get<T>(key: string): Promise<T | null> {
     const cacheKey = this._buildDataCacheKey(key);
     const cachedData = await this.cacheManager.get<string>(cacheKey);
 
-    if (cachedData !== undefined) {
+    if (cachedData !== null) {
       const data = JSON.parse(cachedData);
       const isValid = await this._validateDependencyVersions(data);
       if (isValid) {
         return data[0];
       }
     }
-    return undefined;
+    return null;
   }
 
   /**
    * Delete cached data without invalidate dependencies
    * @param key string cache key
    */
-  public async delete(key: string): Promise<any> {
+  public async delete(key: string): Promise<boolean> {
     const cacheKey = this._buildDataCacheKey(key);
     return await this.cacheManager.del(cacheKey);
   }
@@ -101,7 +101,7 @@ export class CacheDependencyService {
   /**
    * Generate dependency versions (timestamps) for the specified dependencies.
    * This function will try to pull the dependency's versions from cache first.
-   * Then force to generate version of unavailable dependencies by calling {this._updateDependencyVersions}
+   * Then force to generate versions of unavailable dependencies by calling {this._updateDependencyVersions}
    *
    * @param dependencyKeys Array of dependency keys
    * @return Array of Dependency objects
@@ -160,7 +160,7 @@ export class CacheDependencyService {
 
   /**
    * Touch the dependencies to mark them have been changed.
-   * This function will force to update new version (timestamp) for all specified dependencies
+   * This function will force to update a new version (timestamp) for all specified dependencies
    * @param dependencyKeys Array of dependency keys
    * @return Array of Dependency objects
    * @protected

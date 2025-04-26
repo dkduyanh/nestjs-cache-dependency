@@ -1,6 +1,6 @@
 {
   "name": "nestjs-cache-dependency",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Cache Dependency for Nestjs",
   "main": "dist/index.js",
   "scripts": {
@@ -14,7 +14,7 @@
     "cache-dependency"
   ],
   "author": "dkduyanh",
-  "license": "ISC",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dkduyanh/nestjs-cache-dependency.git"
@@ -27,8 +27,8 @@
     "lodash.isequal": "^4.5.0"
   },
   "peerDependencies": {
-    "@nestjs/common": "^8.0.0 || ^9.0.0 || ^10.0.0",
-    "@nestjs/cache-manager": "^2.1.0",
-    "cache-manager": "<=5"
+    "@nestjs/common": "^9.0.0 || ^10.0.0 || ^11.0.0",
+    "@nestjs/cache-manager": "^3.0.0",
+    "cache-manager": ">=6"
   }
 }

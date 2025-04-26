@@ -1,6 +1,13 @@
 Changelog
 ==========================
 
+3.0.0 (2025-04-26)
+------------------------
+- Add NestJS v11 support
+- Change License from ISC to MIT
+- BREAKING CHANGES:
+  - `get: <T>(key: string) => Promise<T | null>` Gets a saved value from the cache. Returns a 'null' if not found or expired instead of 'undefined'
+
 2.0.0 (2023-07-18)
 ------------------------
 - Add NestJS v10 support.
