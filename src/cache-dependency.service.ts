@@ -57,7 +57,7 @@ export class CacheDependencyService {
     const cacheKey = this._buildDataCacheKey(key);
     const cachedData = await this.cacheManager.get<string>(cacheKey);
 
-    if (cachedData !== null) {
+    if (cachedData) {
       try {
         const data = JSON.parse(cachedData);
         const isValid = await this._validateDependencyVersions(data);
