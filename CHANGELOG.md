@@ -1,5 +1,8 @@
 Changelog
 ==========================
+3.0.1 (2025-09-04)
+------------------------
+- Fix error "undefined" is not valid JSON while retrieving data from the cache.
 
 3.0.0 (2025-04-26)
 ------------------------

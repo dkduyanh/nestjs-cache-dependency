@@ -58,10 +58,14 @@ export class CacheDependencyService {
     const cachedData = await this.cacheManager.get<string>(cacheKey);
 
     if (cachedData !== null) {
-      const data = JSON.parse(cachedData);
-      const isValid = await this._validateDependencyVersions(data);
-      if (isValid) {
-        return data[0];
+      try {
+        const data = JSON.parse(cachedData);
+        const isValid = await this._validateDependencyVersions(data);
+        if (isValid) {
+          return data[0];
+        }
+      } catch (e) {
+        console.error("Invalid JSON:", e.message);
       }
     }
     return null;
